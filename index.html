@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberSentinel Browser</title>
+  <link rel="stylesheet" href="browser.css">
+</head>
+<body>
+
+  <!-- Top Browser Chrome Window Header -->
+  <header class="browser-chrome">
+    <!-- Tabs Strip -->
+    <div class="tab-strip" id="tabStrip">
+      <div class="tab active" data-tab-id="1">
+        <span class="tab-icon">🛡️</span>
+        <span class="tab-title" id="tabTitle1">CyberSentinel Home</span>
+        <span class="tab-close" data-action="close-tab" data-tab-id="1">&times;</span>
+      </div>
+      <button class="btn-new-tab" id="btnNewTab" title="Open new tab">+</button>
+    </div>
+
+    <!-- Navigation & Search Omnibox Toolbar -->
+    <div class="nav-toolbar">
+      <div class="nav-buttons">
+        <button class="nav-btn" id="btnBack" title="Back">&#8592;</button>
+        <button class="nav-btn" id="btnForward" title="Forward">&#8594;</button>
+        <button class="nav-btn" id="btnReload" title="Reload">&#8635;</button>
+        <button class="nav-btn" id="btnHome" title="Home">&#8962;</button>
+      </div>
+
+      <div class="omnibox-wrapper">
+        <span class="omnibox-badge" id="sslBadge">
+          <span id="sslIcon">🔒</span>
+          <span id="sslLabel">SECURE TLS 1.3</span>
+        </span>
+        <input type="text" class="omnibox" id="omnibox" placeholder="Search the web or type a URL (e.g. google.com, duckduckgo.com, wikipedia.org)..." autocomplete="off" spellcheck="false">
+        <div class="omnibox-actions">
+          <select class="search-engine-selector" id="searchEngineSelect" title="Select Search Engine">
+            <option value="ddg">DuckDuckGo</option>
+            <option value="google">Google</option>
+            <option value="bing">Bing</option>
+            <option value="wiki">Wikipedia</option>
+          </select>
+          <button class="btn-open-external" id="btnOpenExternal" title="Open in External Browser Window">&#8599;</button>
+        </div>
+      </div>
+
+      <div class="chrome-actions">
+        <div class="shield-pill" id="shieldPill" title="Click to toggle CyberSentinel Real-Time Defense">
+          <span>🛡️</span>
+          <span id="shieldStatusText">DEFENSE ACTIVE</span>
+        </div>
+        <button class="btn-toggle-sniffer" id="btnToggleSniffer" title="Toggle Live Packet Sniffer Panel">
+          <span>📡</span>
+          <span id="snifferToggleText">Sniffer Panel</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Bookmarks Bar -->
+    <div class="bookmarks-bar">
+      <a class="bookmark-item" data-url="https://duckduckgo.com" data-title="DuckDuckGo Search">
+        <span>🦆</span> DuckDuckGo
+      </a>
+      <a class="bookmark-item" data-url="https://www.wikipedia.org" data-title="Wikipedia">
+        <span>🌐</span> Wikipedia
+      </a>
+      <a class="bookmark-item" data-url="https://github.com" data-title="GitHub">
+        <span>🐙</span> GitHub
+      </a>
+      <a class="bookmark-item" data-url="https://news.ycombinator.com" data-title="Hacker News">
+        <span>⚡</span> Hacker News
+      </a>
+      <a class="bookmark-item" data-url="https://www.virustotal.com" data-title="VirusTotal Threat Intel">
+        <span>🦠</span> VirusTotal
+      </a>
+      <a class="bookmark-item" data-url="https://www.shodan.io" data-title="Shodan Search">
+        <span>🔍</span> Shodan
+      </a>
+      <a class="bookmark-item threat-test" data-url="test://threat-demo" data-title="Threat Simulation">
+        <span>⚠️</span> Threat Lab
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Split-Screen Workspace -->
+  <div class="browser-body">
+
+    <!-- Primary Web Viewport -->
+    <main class="web-viewport" id="viewportContainer">
+
+      <!-- Viewport Security Info Banner (Active when browsing web pages) -->
+      <div class="viewport-security-banner" id="viewportSecurityBanner" style="display: none;">
+        <div class="banner-tags">
+          <span class="tag-badge grade-a" id="bannerGrade">GRADE A+</span>
+          <span class="tag-badge tls" id="bannerTls">TLS 1.3 / AES-256</span>
+          <span id="bannerHost" style="color: #fff; font-weight: 700;">Host: None</span>
+          <span id="bannerIp" style="color: var(--cyan);">IP: 0.0.0.0:443</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <span style="color: var(--emerald);" id="bannerHsts">✓ HSTS Enforced</span>
+          <span style="color: var(--text-muted);" id="bannerPackets">0 pkts captured</span>
+        </div>
+      </div>
+
+      <!-- 1. Search Home Page (Default View) -->
+      <section class="search-home" id="searchHomeView">
+        <div class="search-home-logo">
+          <span class="shield-icon">🛡️</span>
+          <div>
+            <h1>CyberSentinel Browser</h1>
+            <div class="sub-badge">DEFENSIVE PACKET DISSECTION & AUTONOMOUS WEB RUNNER</div>
+          </div>
+        </div>
+
+        <p class="search-home-sub">
+          Search the web or enter any website. Every DNS lookup, TCP 3-way handshake, TLS 1.3 session, and HTTP transaction is inspected in real time by the internal CyberSentinel heuristic engine.
+        </p>
+
+        <!-- Centered Quick Search Bar -->
+        <div class="quick-search-box">
+          <span class="quick-search-icon">🔍</span>
+          <input type="text" class="quick-search-input" id="quickSearchInput" placeholder="Search the web securely or enter website URL (e.g. google.com)..." autofocus spellcheck="false">
+        </div>
+
+        <!-- Quick Access Portals Grid -->
+        <div class="quick-portals-grid">
+          <div class="portal-chip" data-url="https://duckduckgo.com">
+            <span>🦆</span> DuckDuckGo
+          </div>
+          <div class="portal-chip" data-url="https://www.wikipedia.org">
+            <span>🌐</span> Wikipedia
+          </div>
+          <div class="portal-chip" data-url="https://github.com">
+            <span>🐙</span> GitHub
+          </div>
+          <div class="portal-chip" data-url="https://www.virustotal.com">
+            <span>🦠</span> VirusTotal
+          </div>
+        </div>
+
+        <!-- Security Features Cards Grid -->
+        <div class="security-features-grid">
+          <div class="feature-card">
+            <div class="feat-icon">📡</div>
+            <div class="feat-title">L3/L4/L7 Packet Inspection</div>
+            <div class="feat-desc">Extracts Ethernet frames, IP checksums, TCP flags, TLS records, and HTTP request headers in live stream.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feat-icon">⚡</div>
+            <div class="feat-title">Stateful Anomaly Detection</div>
+            <div class="feat-desc">Heuristic sliding-windows flag rapid SYN port scans, burst request floods, SQLi payloads, and C2 beacons.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feat-icon">🚫</div>
+            <div class="feat-title">Active Quarantine Vault</div>
+            <div class="feat-desc">Automated socket-level isolation protects against malicious servers and unencrypted credential exfiltration.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Search Results View -->
+      <section class="search-results-container" id="searchResultsView" style="display: none;">
+        <div class="search-results-header">
+          <div>
+            <h2 style="font-size: 15px; color: #fff;">Search Results for: <span id="searchQueryLabel" style="color: var(--cyan);"></span></h2>
+            <span style="font-size: 11px; color: var(--text-muted);" id="searchResultCount">Fetching real-time knowledge base & web telemetry...</span>
+          </div>
+          <button id="btnSwitchToFrame" class="btn-result-action primary">Open Live Web Search &rarr;</button>
+        </div>
+        <div id="searchResultsList" style="display: flex; flex-direction: column; gap: 12px;"></div>
+      </section>
+
+      <!-- 3. Embedded Iframe for Live Web Pages -->
+      <iframe class="browser-iframe" id="webFrame" style="display: none;" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"></iframe>
+
+      <!-- 4. Friendly Fallback Screen (for sites that block iframe embedding) -->
+      <section class="iframe-fallback" id="iframeFallbackView" style="display: none;">
+        <div class="iframe-fallback-icon">🛡️</div>
+        <h3 id="fallbackTitle">External Site Protection Policy</h3>
+        <p id="fallbackDesc">
+          This domain enforces strict anti-embedding headers (<code>X-Frame-Options: SAMEORIGIN</code>). CyberSentinel has captured and inspected all network packets for this destination.
+        </p>
+        <div class="actions">
+          <button class="btn-primary" id="btnFallbackOpen">Open in External Window</button>
+          <button class="btn-secondary" id="btnFallbackInspect">Inspect Captured Packets</button>
+          <button class="btn-secondary" id="btnFallbackHome">Return to Home</button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Integrated CyberSentinel Live Sniffer Sidebar (Split View) -->
+    <aside class="sniffer-panel" id="snifferPanel">
+      <div class="sniffer-header">
+        <div class="sniffer-title">
+          <span class="live-indicator" id="liveRecordingDot"></span>
+          <span>CYBERSENTINEL SNIFFER</span>
+        </div>
+        <div class="sniffer-actions">
+          <button class="btn-sniffer-action" id="btnPauseResume" title="Pause / Resume Packet Capture">Pause</button>
+          <button class="btn-sniffer-action" id="btnClearPackets" title="Clear Packet Log">Clear</button>
+          <button class="btn-sniffer-action highlight" id="btnExportLog" title="Export Security Telemetry Log">Export</button>
+        </div>
+      </div>
+
+      <!-- Real-time HUD Metrics Bar -->
+      <div class="sniffer-metrics">
+        <div class="metric-box">
+          <div class="metric-val" id="metricPackets" style="color: var(--cyan);">0</div>
+          <div class="metric-lbl">Packets</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val" id="metricThreats" style="color: var(--rose);">0</div>
+          <div class="metric-lbl">Threats</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val" id="metricBandwidth" style="color: var(--emerald);">0 KB</div>
+          <div class="metric-lbl">Traffic</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val" id="metricEncryption" style="color: #c084fc;">100%</div>
+          <div class="metric-lbl">Encrypted</div>
+        </div>
+      </div>
+
+      <!-- Protocol Filters Strip -->
+      <div class="filter-bar">
+        <button class="filter-btn active" data-filter="ALL">ALL</button>
+        <button class="filter-btn" data-filter="HTTPS">HTTPS</button>
+        <button class="filter-btn" data-filter="HTTP">HTTP</button>
+        <button class="filter-btn" data-filter="DNS">DNS</button>
+        <button class="filter-btn" data-filter="TCP">TCP</button>
+        <button class="filter-btn threat-filter" data-filter="THREAT">🚨 THREATS</button>
+      </div>
+
+      <!-- Packet Stream Table -->
+      <div class="sniffer-table-container" id="packetTableContainer">
+        <div id="packetEmptyNotice" style="padding: 30px 20px; text-align: center; color: var(--text-muted);">
+          <div style="font-size: 28px; margin-bottom: 8px;">📡</div>
+          <p style="font-size: 12px; font-weight: 600; margin-bottom: 4px; color: var(--text-dim);">Awaiting Network Sockets...</p>
+          <p style="font-size: 10px;">Search a query or visit any website to observe live protocol dissection.</p>
+        </div>
+        <div id="packetStream"></div>
+      </div>
+
+      <!-- Threat Simulation Lab Strip -->
+      <div class="threat-lab-strip">
+        <div class="threat-lab-header">
+          <span>⚡ THREAT INJECTION LAB</span>
+          <span style="font-size: 9px; color: var(--text-muted);">Click to test detection heuristics</span>
+        </div>
+        <div class="threat-buttons-row">
+          <button class="btn-threat-sim" data-attack="sqli" title="Inject SQL Injection Payload">SQLi Probe</button>
+          <button class="btn-threat-sim" data-attack="xss" title="Inject Cross-Site Scripting Payload">XSS Attack</button>
+          <button class="btn-threat-sim" data-attack="syn_scan" title="Simulate Rapid SYN Port Scan">SYN Scan</button>
+          <button class="btn-threat-sim" data-attack="cred_leak" title="Simulate Plaintext Password Exposure">Cred Leak</button>
+          <button class="btn-threat-sim" data-attack="c2_beacon" title="Simulate DNS C2 Beaconing">C2 Beacon</button>
+          <button class="btn-threat-sim" data-attack="burst_flood" title="Simulate High Velocity Flood">Burst Flood</button>
+        </div>
+      </div>
+
+      <!-- Quarantine / Threat Status Bar -->
+      <div class="quarantine-bar">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--emerald);" id="statusIndicatorDot"></span>
+          <span id="quarantineStatusText" style="color: var(--text-dim); font-size: 10px; font-family: var(--font-mono);">Engine: NORMAL</span>
+        </div>
+        <button id="btnViewQuarantine" style="background: rgba(15, 26, 51, 0.9); border: 1px solid var(--border); color: var(--text-dim); font-size: 10px; padding: 2px 8px; border-radius: 4px; cursor: pointer;">Quarantine Vault (0)</button>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Modal 1: Deep Packet Dissection Modal (Wireshark-grade) -->
+  <div class="modal-overlay" id="packetModal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>🔍</span>
+          <span>Deep Packet Dissection (<span id="modalPacketId" style="color: var(--cyan);">#0</span>)</span>
+        </div>
+        <button class="modal-close" id="btnCloseModal">&times;</button>
+      </div>
+
+      <div id="modalPacketBody" style="display: flex; flex-direction: column; gap: 8px; overflow-y: auto;">
+        <!-- Populated dynamically by browser.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Active Quarantine Vault Modal -->
+  <div class="modal-overlay" id="quarantineModal" style="display: none;">
+    <div class="modal-content" style="max-width: 520px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>🚫</span>
+          <span style="color: var(--rose);">Active Quarantine Vault</span>
+        </div>
+        <button class="modal-close" id="btnCloseQuarantineModal">&times;</button>
+      </div>
+
+      <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 12px;">
+        The following destination hosts and IPs have been isolated due to triggering CyberSentinel behavioral anomaly rules:
+      </div>
+
+      <div id="quarantineList" style="display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; margin-bottom: 14px;">
+        <!-- Populated dynamically by browser.js -->
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="btn-secondary" id="btnClearQuarantine">Release All Hosts</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="browser.js"></script>
+</body>
+</html>
