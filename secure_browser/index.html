@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberSentinel - Defensive Secure Web Browser</title>
+  <link rel="stylesheet" href="browser.css">
+</head>
+<body>
+
+  <!-- Top Browser Chrome Window Header -->
+  <header class="browser-chrome">
+
+    <!-- Tab Strip -->
+    <div class="tab-strip" id="tab-strip">
+      <div class="tab active" data-tab-id="1">
+        <span class="tab-icon">🛡️</span>
+        <span class="tab-title">Secure Search Home</span>
+        <span class="tab-close" data-close-tab="1">✕</span>
+      </div>
+      <button class="btn-new-tab" id="btn-new-tab" title="Open New Secure Tab">+</button>
+    </div>
+
+    <!-- Navigation & Omnibox Toolbar -->
+    <div class="nav-toolbar">
+      <div class="nav-buttons">
+        <button class="nav-btn" id="btn-back" title="Go Back">◀</button>
+        <button class="nav-btn" id="btn-forward" title="Go Forward">▶</button>
+        <button class="nav-btn" id="btn-reload" title="Reload Tab">🔄</button>
+        <button class="nav-btn" id="btn-home" title="Secure Home">🏠</button>
+      </div>
+
+      <!-- Omnibox (Search & Address Bar) -->
+      <div class="omnibox-wrapper">
+        <div class="omnibox-badge" id="ssl-badge" title="Connection encrypted with TLSv1.3">
+          <span>🔒</span>
+          <span style="font-weight: 700; font-size: 10px;">SECURE</span>
+        </div>
+
+        <input type="text" class="omnibox" id="omnibox" placeholder="Search the web securely or enter URL (e.g. wikipedia.org)..." value="https://cybersentinel.local/search">
+
+        <!-- Search Engine Selector -->
+        <select class="search-engine-selector" id="search-engine">
+          <option value="duckduckgo">DuckDuckGo</option>
+          <option value="google">Google</option>
+          <option value="bing">Bing</option>
+          <option value="wikipedia">Wikipedia</option>
+        </select>
+      </div>
+
+      <!-- Action Controls -->
+      <div class="chrome-actions">
+        <!-- Shield Security Pill -->
+        <div class="shield-pill" id="btn-shield" title="Click to view defensive blockers">
+          <span>🛡️</span>
+          <span id="shield-count">0 Trackers Blocked</span>
+        </div>
+
+        <!-- Toggle Live Packet Sniffer Split Screen -->
+        <button class="btn-toggle-sniffer" id="btn-toggle-sniffer" title="Toggle Live Network Packet Sniffer Panel">
+          <span>📦</span>
+          <span id="sniffer-toggle-label">Packet Sniffer [ON]</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Bookmarks Bar -->
+    <div class="bookmarks-bar">
+      <a class="bookmark-item" data-url="https://duckduckgo.com"><span>🦆</span> DuckDuckGo</a>
+      <a class="bookmark-item" data-url="https://en.wikipedia.org"><span>📖</span> Wikipedia</a>
+      <a class="bookmark-item" data-url="https://github.com"><span>🐙</span> GitHub</a>
+      <a class="bookmark-item" data-url="https://cve.mitre.org"><span>🔍</span> CVE Vulnerability DB</a>
+      <a class="bookmark-item" data-url="https://attack.mitre.org"><span>⚔️</span> MITRE ATT&CK</a>
+      <a class="bookmark-item" data-url="https://archive.org"><span>🏛️</span> Internet Archive</a>
+    </div>
+
+  </header>
+
+  <!-- Main Split-Screen Browser Body -->
+  <main class="browser-body">
+
+    <!-- Web Viewport Area -->
+    <section class="web-viewport" id="web-viewport">
+
+      <!-- Custom Built-in Search Home View (Default) -->
+      <div class="search-home" id="search-home-view">
+        <div class="search-home-logo">
+          <span class="shield">🛡️</span>
+          <h1>CYBERSENTINEL BROWSER</h1>
+        </div>
+        <p class="search-home-sub">
+          Next-generation privacy-first searching browser with real-time deep packet inspection, automated tracker isolation, and live heuristic anomaly defense.
+        </p>
+
+        <!-- Centered Quick Search Box -->
+        <div class="quick-search-box">
+          <span class="quick-search-icon">🔍</span>
+          <input type="text" class="quick-search-input" id="quick-search-input" placeholder="Search the web without being tracked...">
+        </div>
+
+        <!-- 3 Security Architecture Pillars -->
+        <div class="security-features-grid">
+          <div class="feature-card">
+            <div class="feat-icon">🔒</div>
+            <div class="feat-title">Real-Time Packet Sniffer</div>
+            <div class="feat-desc">Every HTTP/HTTPS request, DNS query, and TLS handshake is dissected live in the split panel.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feat-icon">🚫</div>
+            <div class="feat-title">Active Domain Quarantine</div>
+            <div class="feat-desc">One-click blocking drops third-party tracking beacons and telemetry scripts before execution.</div>
+          </div>
+          <div class="feature-card">
+            <div class="feat-icon">📊</div>
+            <div class="feat-title">Executive Forensic Audit</div>
+            <div class="feat-desc">Export comprehensive security and network audit logs for academic or diagnostic reporting.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Web Page & Search Iframe (Active when navigating) -->
+      <iframe class="browser-iframe" id="web-frame" style="display: none;" sandbox="allow-same-origin allow-scripts allow-forms allow-popups"></iframe>
+
+    </section>
+
+    <!-- Integrated Live Packet Sniffer Panel (Split View) -->
+    <aside class="sniffer-panel" id="sniffer-panel">
+
+      <!-- Sniffer Panel Header -->
+      <div class="sniffer-header">
+        <div class="sniffer-title">
+          <span>📦</span>
+          <span>LIVE PACKET & ANOMALY INSPECTOR</span>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button id="btn-clear-sniffer" class="nav-btn" style="width: auto; padding: 2px 8px; font-size: 10px;" title="Clear Packet Log">Clear</button>
+          <button id="btn-export-browser-audit" class="nav-btn" style="width: auto; padding: 2px 8px; font-size: 10px;" title="Download Audit Report">Export</button>
+        </div>
+      </div>
+
+      <!-- Real-time HUD Metrics -->
+      <div class="sniffer-metrics">
+        <div class="metric-box">
+          <div class="metric-val" id="metric-pkts" style="color: #fff;">0</div>
+          <div class="metric-lbl">Packets</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val" id="metric-pps" style="color: #06b6d4;">0.0</div>
+          <div class="metric-lbl">Velocity (PPS)</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val" id="metric-threats" style="color: #f43f5e;">0</div>
+          <div class="metric-lbl">Threats</div>
+        </div>
+      </div>
+
+      <!-- Packet Stream Table -->
+      <div class="sniffer-table-container" id="packet-stream-list">
+        <!-- Intercepted packets stream live here -->
+      </div>
+
+      <!-- Quarantine ACL Bottom Bar -->
+      <div class="quarantine-bar">
+        <span style="color: #f43f5e; font-weight: 700;">⛔ Quarantined: <span id="quarantined-count">0</span></span>
+        <button id="btn-view-quarantine" style="background: none; border: none; color: #06b6d4; cursor: pointer; text-decoration: underline; font-size: 10px;">Manage ACL</button>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- Packet Dissection Modal -->
+  <div class="modal-overlay" id="packet-modal" style="display: none;">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 10px; margin-bottom: 12px;">
+        <h3 style="font-size: 13px; font-weight: 700; color: #06b6d4; font-family: monospace;" id="modal-pkt-title">PACKET DISSECTION</h3>
+        <button id="btn-close-modal" style="background: none; border: none; color: #94a3b8; font-size: 14px; cursor: pointer;">✕</button>
+      </div>
+      <div id="modal-pkt-details" style="font-family: monospace; font-size: 11px; space-y: 8px; line-height: 1.6;">
+        <!-- Details injected here -->
+      </div>
+    </div>
+  </div>
+
+  <script src="browser.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+# Prerequisites and Build Artifacts
+build/
+bin/
+obj/
+*.o
+*.obj
+*.exe.config
+
+# IDE & Editor files
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.docstates
+
+# Operating System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Isolated runtime profiles and logs
+AppData/
+UserProfile/
+logs/*.log
+!logs/.gitkeep
+reports/*.txt
+!reports/.gitkeep

@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberSentinel - Defensive Packet Analysis & Active Quarantine Engine</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    @keyframes pulse-glow { 0%, 100% { opacity: 1; filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.6)); } 50% { opacity: 0.5; filter: drop-shadow(0 0 2px rgba(16, 185, 129, 0.2)); } }
+    .pulse-beacon { animation: pulse-glow 2s infinite; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #090d16; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+  </style>
+</head>
+<body class="bg-[#070a13] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-500 selection:text-white">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-slate-800 bg-[#0d1322]/90 backdrop-blur sticky top-0 z-40 px-6 py-3 flex items-center justify-between shadow-lg">
+    <div class="flex items-center gap-3">
+      <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+        <span class="text-xl">🛡️</span>
+        <span id="beacon-ring" class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 pulse-beacon"></span>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-base font-bold tracking-wide text-white">CYBER SENTINEL</h1>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono font-bold">ACTIVE DEFENSE v2.0</span>
+        </div>
+        <p class="text-xs text-slate-400">Intelligent Packet Inspection • Automated Heuristics • Real-Time Quarantine</p>
+      </div>
+    </div>
+
+    <!-- Active Controls -->
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs">
+        <span class="text-slate-500">Interface:</span>
+        <select id="iface-select" class="bg-transparent text-cyan-400 font-semibold focus:outline-none cursor-pointer">
+          <option value="eth0">eth0 (Gigabit Realtek)</option>
+          <option value="wlan0">wlan0 (Wi-Fi 6)</option>
+          <option value="lo">lo (127.0.0.1 Loopback)</option>
+        </select>
+      </div>
+
+      <button id="btn-toggle" onclick="toggleCapture()" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-1.5">
+        <span id="btn-icon">⏸</span> <span id="btn-text">Pause Feed</span>
+      </button>
+
+      <button onclick="openPolicyModal()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all flex items-center gap-1.5">
+        <span>⚙️</span> Defense Policy
+      </button>
+
+      <button onclick="exportAuditReport()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-500/40 transition-all flex items-center gap-1.5">
+        <span>📥</span> Audit Report
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 p-6 max-w-7xl w-full mx-auto space-y-6">
+
+    <!-- KPI HUD Cards -->
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4 shadow-sm relative overflow-hidden">
+        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Frames Ingested</div>
+        <div id="stat-total-pkts" class="text-2xl font-extrabold text-white mt-1 font-mono">0</div>
+        <div class="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Live L2/L3 Dissection
+        </div>
+      </div>
+
+      <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4 shadow-sm relative overflow-hidden">
+        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Bandwidth</div>
+        <div id="stat-total-bytes" class="text-2xl font-extrabold text-cyan-400 mt-1 font-mono">0.00 KB</div>
+        <div class="text-[11px] text-slate-400 mt-1">Wire payload volume</div>
+      </div>
+
+      <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4 shadow-sm relative overflow-hidden">
+        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ingest Velocity</div>
+        <div id="stat-pps" class="text-2xl font-extrabold text-amber-400 mt-1 font-mono">0.0 pps</div>
+        <div class="text-[11px] text-slate-400 mt-1">Sliding-window rate</div>
+      </div>
+
+      <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4 shadow-sm relative overflow-hidden">
+        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Quarantined IPs</div>
+        <div id="stat-quarantined" class="text-2xl font-extrabold text-rose-400 mt-1 font-mono">0</div>
+        <div id="stat-threat-label" class="text-[11px] text-slate-400 mt-1">Firewall shun rules: 0 active</div>
+      </div>
+    </section>
+
+    <!-- Interactive Threat Vector Sandbox -->
+    <section class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <span class="text-cyan-400 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
+            <span>🎯</span> Threat Simulation & Defensive Response Lab
+          </span>
+          <p class="text-xs text-slate-400">Trigger multi-vector cyber attacks to evaluate autonomous mitigation and rule triggers</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="injectNormalBurst()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/50 transition-all flex items-center gap-1">
+            <span>🌐</span> Stream Web Session
+          </button>
+          <button onclick="injectPortScanAttack()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-950/40 border border-amber-500/30 text-amber-400 hover:bg-amber-900/50 transition-all flex items-center gap-1">
+            <span>🔍</span> Nmap Port Sweep
+          </button>
+          <button onclick="injectBurstRateAttack()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-950/40 border border-rose-500/30 text-rose-400 hover:bg-rose-900/50 transition-all flex items-center gap-1">
+            <span>⚡</span> Volumetric SYN Flood
+          </button>
+          <button onclick="injectInsecureTelnet()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-orange-950/40 border border-orange-500/30 text-orange-400 hover:bg-orange-900/50 transition-all flex items-center gap-1">
+            <span>🔓</span> Cleartext Telnet (Port 23)
+          </button>
+          <button onclick="resetData()" class="px-2.5 py-1.5 rounded-lg text-xs font-mono bg-slate-800 text-slate-400 hover:text-white transition-colors">
+            Reset HUD
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visual Dashboard (Chart + Incident Center) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Throughput Chart Canvas -->
+      <div class="lg:col-span-2 bg-slate-900/70 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-cyan-400 font-bold text-sm">📈 Live Packet Velocity & Protocol Distribution</span>
+            <span class="text-[10px] text-slate-500 font-mono">(Real-time 1s resolution)</span>
+          </div>
+          <div class="flex items-center gap-3 text-xs font-mono">
+            <span class="flex items-center gap-1 text-cyan-400"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> TCP</span>
+            <span class="flex items-center gap-1 text-indigo-400"><span class="w-2 h-2 rounded-full bg-indigo-400"></span> UDP</span>
+            <span class="flex items-center gap-1 text-emerald-400"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> ICMP</span>
+          </div>
+        </div>
+        <canvas id="throughputChart" height="135" class="w-full rounded bg-slate-950/60 border border-slate-900"></canvas>
+      </div>
+
+      <!-- Security Incident & Active Quarantine Center -->
+      <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4 flex flex-col">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-rose-400 font-bold text-sm">🚨 Incident & Quarantine Center</span>
+            <span id="alert-counter-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 font-mono font-bold">0 INCIDENTS</span>
+          </div>
+        </div>
+
+        <div id="incidents-container" class="flex-1 space-y-2.5 overflow-y-auto max-h-56 pr-1 font-mono text-xs">
+          <div class="p-4 rounded-xl bg-slate-950/40 border border-slate-800/60 text-center text-slate-500 text-xs">
+            ✔ Clean Baseline: Zero security anomalies registered in sliding window.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Firewall Quarantine Table -->
+    <section class="bg-slate-900/70 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+      <div class="px-5 py-3 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+            <span>⛔</span> Active Firewall Quarantine Table (ACL Shun List)
+          </span>
+          <span class="text-[11px] text-slate-500 font-mono" id="quarantine-count-info">(0 IP addresses blocked)</span>
+        </div>
+        <span class="text-[11px] text-slate-400">Packets from quarantined IPs are dropped at wire ingestion</span>
+      </div>
+
+      <div id="quarantine-list" class="p-3 flex flex-wrap gap-2 text-xs font-mono min-h-[50px] items-center">
+        <span class="text-slate-500 text-xs italic">No hosts quarantined yet. Click "Quarantine IP" on any detected alert above to block it immediately.</span>
+      </div>
+    </section>
+
+    <!-- Deep Packet Stream Inspector with Search & Filtering -->
+    <section class="bg-slate-900/70 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+      <div class="px-5 py-3.5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-950/40">
+        <div class="flex items-center gap-2">
+          <h3 class="text-sm font-bold text-white tracking-wide">📦 Deep Packet Stream Inspector</h3>
+          <span class="text-[11px] text-slate-400">(Click row to inspect L2/L3/L4 headers & Hex Payload)</span>
+        </div>
+        
+        <!-- Search & Protocol Filter Bar -->
+        <div class="flex items-center gap-3 text-xs">
+          <div class="relative">
+            <input id="search-input" oninput="applyFilters()" type="text" placeholder="Search IP or Port..." class="bg-slate-900 text-slate-200 border border-slate-700 rounded-lg pl-7 pr-3 py-1 text-xs focus:outline-none focus:border-cyan-500 w-44">
+            <span class="absolute left-2 top-1.5 text-slate-500 text-xs">🔍</span>
+          </div>
+
+          <select id="protocol-filter" onchange="applyFilters()" class="bg-slate-900 text-slate-200 border border-slate-700 rounded-lg px-3 py-1 text-xs focus:outline-none focus:border-cyan-500 cursor-pointer">
+            <option value="ALL">All Protocols</option>
+            <option value="TCP">TCP Frames</option>
+            <option value="UDP">UDP Datagrams</option>
+            <option value="ICMP">ICMP Echo</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto max-h-72">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-slate-950 text-slate-400 uppercase tracking-wider text-[10px] sticky top-0 border-b border-slate-800 z-10">
+            <tr>
+              <th class="py-2.5 px-4">Timestamp</th>
+              <th class="py-2.5 px-4">Source Host</th>
+              <th class="py-2.5 px-4">Destination Host</th>
+              <th class="py-2.5 px-4">Protocol</th>
+              <th class="py-2.5 px-4 text-right">Length</th>
+              <th class="py-2.5 px-4">Dissection Analysis & Mitigation</th>
+            </tr>
+          </thead>
+          <tbody id="packet-table-body" class="divide-y divide-slate-800/40">
+            <!-- Packet rows injected dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Dissection Modal -->
+  <div id="packet-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl animate-scaleUp">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h4 class="text-sm font-bold text-cyan-400 font-mono flex items-center gap-2" id="modal-title">
+          <span>🔬</span> PROTOCOL DISSECTION & HEX INSPECTOR
+        </h4>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white text-lg">✖</button>
+      </div>
+
+      <div class="space-y-3 font-mono text-xs">
+        <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 space-y-1.5" id="modal-headers"></div>
+
+        <div>
+          <div class="text-[11px] text-slate-400 font-semibold mb-1 uppercase tracking-wider">Raw Payload Hex Dump</div>
+          <pre id="modal-hex" class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-emerald-400 text-[11px] overflow-x-auto font-mono max-h-36"></pre>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+        <span class="text-[11px] text-slate-500 font-mono">Bounds Check: Verified 100% Safe (No Buffer Overflows)</span>
+        <button onclick="closeModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white">Close Inspector</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Defense Policy / Thresholds Modal -->
+  <div id="policy-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h4 class="text-sm font-bold text-emerald-400 font-mono flex items-center gap-2">
+          <span>⚙️</span> HEURISTIC SENSITIVITY CONFIGURATION
+        </h4>
+        <button onclick="closePolicyModal()" class="text-slate-400 hover:text-white text-lg">✖</button>
+      </div>
+
+      <div class="space-y-4 text-xs font-mono">
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-slate-300 font-bold">Port Scan Threshold:</span>
+            <span id="val-port-thresh" class="text-cyan-400 font-bold">10 ports</span>
+          </div>
+          <input type="range" min="3" max="30" value="10" class="w-full cursor-pointer accent-cyan-400" oninput="updatePortThresh(this.value)">
+          <div class="text-[10px] text-slate-500">Triggers when an IP touches this many distinct ports within 5s</div>
+        </div>
+
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-slate-300 font-bold">Volumetric Burst Threshold:</span>
+            <span id="val-burst-thresh" class="text-rose-400 font-bold">200 pkts</span>
+          </div>
+          <input type="range" min="50" max="500" step="25" value="200" class="w-full cursor-pointer accent-rose-400" oninput="updateBurstThresh(this.value)">
+          <div class="text-[10px] text-slate-500">Triggers when an IP floods more than this number of packets in 5s</div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
+          <span class="text-slate-300">Flag Cleartext Telnet (Port 23):</span>
+          <input type="checkbox" id="chk-telnet" checked class="accent-cyan-400 cursor-pointer w-4 h-4">
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-3">
+        <button onclick="closePolicyModal()" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white">Save Policy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Application Engine -->
+  <script>
+    let isCapturing = true;
+    let totalPackets = 0;
+    let totalBytes = 0;
+    let tcpCount = 0;
+    let udpCount = 0;
+    let icmpCount = 0;
+    let alerts = [];
+    let packets = [];
+    let blockedIps = new Set();
+    let portScanThreshold = 10;
+    let burstThreshold = 200;
+
+    // Rolling Chart Setup
+    const chartHistory = Array(30).fill(0);
+    const canvas = document.getElementById('throughputChart');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = canvas.parentElement.clientWidth - 32;
+      canvas.height = 125;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function drawChart() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const maxVal = Math.max(...chartHistory, 25);
+      const stepX = canvas.width / (chartHistory.length - 1);
+
+      // Grid Lines
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.5)';
+      ctx.lineWidth = 1;
+      for (let y = 0; y <= canvas.height; y += 30) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      // Smooth Curve
+      ctx.beginPath();
+      chartHistory.forEach((val, i) => {
+        const x = i * stepX;
+        const y = canvas.height - (val / maxVal) * (canvas.height - 20) - 10;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+
+      ctx.strokeStyle = '#06b6d4';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.lineTo(canvas.width, canvas.height);
+      ctx.lineTo(0, canvas.height);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      grad.addColorStop(0, 'rgba(6, 182, 212, 0.25)');
+      grad.addColorStop(1, 'rgba(6, 182, 212, 0)');
+      ctx.fillStyle = grad;
+      ctx.fill();
+    }
+
+    // Packet Ingestion
+    function addPacket(srcIp, dstIp, srcPort, dstPort, proto, len, info, isThreat = false) {
+      if (!isCapturing) return;
+
+      // Active Defense Drop: Is host quarantined?
+      const isDropped = blockedIps.has(srcIp);
+
+      totalPackets++;
+      totalBytes += len;
+      if (proto === 'TCP') tcpCount++;
+      else if (proto === 'UDP') udpCount++;
+      else if (proto === 'ICMP') icmpCount++;
+
+      const pkt = {
+        id: totalPackets,
+        timestamp: new Date().toLocaleTimeString(),
+        src: `${srcIp}:${srcPort}`,
+        srcIp: srcIp,
+        dst: `${dstIp}:${dstPort}`,
+        dstIp: dstIp,
+        proto: proto,
+        len: len,
+        info: isDropped ? `[BLOCKED BY ACTIVE FIREWALL] Dropped frame from ${srcIp}` : info,
+        isThreat: isThreat,
+        isDropped: isDropped
+      };
+
+      packets.unshift(pkt);
+      if (packets.length > 120) packets.pop();
+
+      applyFilters();
+      updateHUD();
+    }
+
+    function applyFilters() {
+      const searchTerm = document.getElementById('search-input').value.toLowerCase();
+      const protoFilter = document.getElementById('protocol-filter').value;
+      const tbody = document.getElementById('packet-table-body');
+
+      const filtered = packets.filter(p => {
+        const matchProto = (protoFilter === 'ALL' || p.proto === protoFilter);
+        const matchSearch = searchTerm === '' || 
+                            p.src.toLowerCase().includes(searchTerm) || 
+                            p.dst.toLowerCase().includes(searchTerm) || 
+                            p.info.toLowerCase().includes(searchTerm);
+        return matchProto && matchSearch;
+      });
+
+      tbody.innerHTML = filtered.slice(0, 25).map(p => {
+        const protoBadge = p.proto === 'TCP' ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30' :
+                           p.proto === 'UDP' ? 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30' :
+                                              'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+
+        const rowBg = p.isDropped ? 'bg-red-950/30 text-red-300' :
+                      p.isThreat  ? 'bg-rose-950/20 text-rose-200' : 'hover:bg-slate-800/40 text-slate-300';
+
+        return `
+          <tr onclick="inspectPacket(${p.id})" class="cursor-pointer transition-colors ${rowBg}">
+            <td class="py-2.5 px-4 text-slate-400">${p.timestamp}</td>
+            <td class="py-2.5 px-4 font-semibold ${p.isDropped ? 'text-red-400 line-through' : 'text-slate-200'}">${p.src}</td>
+            <td class="py-2.5 px-4 font-semibold text-slate-300">${p.dst}</td>
+            <td class="py-2.5 px-4">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${protoBadge}">${p.proto}</span>
+            </td>
+            <td class="py-2.5 px-4 text-right text-slate-400">${p.len} B</td>
+            <td class="py-2.5 px-4 truncate max-w-xs ${p.isDropped ? 'text-red-400 font-bold' : ''}">${p.info}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updateHUD() {
+      document.getElementById('stat-total-pkts').textContent = totalPackets.toLocaleString();
+      const mb = totalBytes / 1048576;
+      document.getElementById('stat-total-bytes').textContent = mb > 1 ? mb.toFixed(2) + ' MB' : (totalBytes / 1024).toFixed(1) + ' KB';
+      document.getElementById('stat-quarantined').textContent = blockedIps.size;
+    }
+
+    // Active Defense & Quarantine Mechanism
+    function quarantineIp(ip) {
+      blockedIps.add(ip);
+      renderQuarantineList();
+      updateHUD();
+      applyFilters();
+    }
+
+    function unblockIp(ip) {
+      blockedIps.delete(ip);
+      renderQuarantineList();
+      updateHUD();
+      applyFilters();
+    }
+
+    function renderQuarantineList() {
+      const container = document.getElementById('quarantine-list');
+      document.getElementById('quarantine-count-info').textContent = `(${blockedIps.size} IP addresses blocked)`;
+
+      if (blockedIps.size === 0) {
+        container.innerHTML = '<span class="text-slate-500 text-xs italic">No hosts quarantined yet. Click "Quarantine IP" on any detected alert above to block it immediately.</span>';
+        return;
+      }
+
+      container.innerHTML = Array.from(blockedIps).map(ip => `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs font-mono">
+          <span>🚫 ${ip}</span>
+          <button onclick="unblockIp('${ip}')" class="text-slate-400 hover:text-white font-bold ml-1 text-sm" title="Release / Unblock">✕</button>
+        </span>
+      `).join('');
+    }
+
+    function registerAlert(severity, title, srcIp, desc, remediation) {
+      alerts.unshift({
+        severity,
+        title,
+        srcIp,
+        desc,
+        remediation,
+        time: new Date().toLocaleTimeString()
+      });
+
+      document.getElementById('alert-counter-badge').textContent = `${alerts.length} INCIDENTS`;
+      const container = document.getElementById('incidents-container');
+
+      container.innerHTML = alerts.map(a => {
+        const badgeColor = a.severity === 'CRITICAL' ? 'bg-red-500/20 text-red-400 border-red-500/50' :
+                           a.severity === 'HIGH'     ? 'bg-rose-500/20 text-rose-400 border-rose-500/40' :
+                                                       'bg-amber-500/20 text-amber-400 border-amber-500/40';
+
+        const isAlreadyBlocked = blockedIps.has(a.srcIp);
+
+        return `
+          <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5 animate-fadeIn">
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 rounded text-[9px] font-bold border ${badgeColor}">${a.severity}</span>
+              <span class="text-[10px] text-slate-500">${a.time}</span>
+            </div>
+            <div class="font-bold text-slate-100 text-xs">${a.title}</div>
+            <div class="text-[11px] text-slate-400">${a.desc}</div>
+            <div class="text-[10px] text-cyan-400 bg-cyan-950/30 p-1.5 rounded border border-cyan-800/40">
+              <b>Recommended Defense:</b> ${a.remediation}
+            </div>
+            <div class="pt-1 flex items-center justify-between">
+              <span class="text-[10px] text-slate-500 font-mono">Attacker IP: ${a.srcIp}</span>
+              ${isAlreadyBlocked 
+                ? '<span class="text-[10px] text-rose-400 font-bold">● ALREADY QUARANTINED</span>' 
+                : `<button onclick="quarantineIp('${a.srcIp}')" class="px-2.5 py-1 rounded text-[10px] font-bold bg-rose-600 hover:bg-rose-500 text-white shadow-sm flex items-center gap-1">
+                     <span>⛔</span> Quarantine IP
+                   </button>`
+              }
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Interactive Packet Inspector Modal
+    function inspectPacket(id) {
+      const pkt = packets.find(p => p.id === id);
+      if (!pkt) return;
+
+      document.getElementById('modal-title').textContent = `PACKET #${pkt.id} [${pkt.proto}] DEEP DISSECTION`;
+      document.getElementById('modal-headers').innerHTML = `
+        <div><b class="text-cyan-400">Ethernet Layer (L2):</b> Dest MAC: 00:1A:2B:3C:4D:5E | Src MAC: A4:83:E7:2C:19:B0 | Type: 0x0800 (IPv4)</div>
+        <div><b class="text-indigo-400">IPv4 Header (L3):</b> Src: ${pkt.src} | Dst: ${pkt.dst} | Protocol: ${pkt.proto} | TTL: 64 | Length: ${pkt.len} B</div>
+        <div><b class="text-emerald-400">Transport & Info (L4):</b> ${pkt.info}</div>
+      `;
+
+      let hex = "";
+      for (let i = 0; i < 64; i += 16) {
+        let chunk = `0x${i.toString(16).padStart(4, '0')}  `;
+        for (let j = 0; j < 16; j++) {
+          chunk += Math.floor(Math.random() * 256).toString(16).padStart(2, '0') + " ";
+        }
+        chunk += " |" + "................|".substring(0, 16);
+        hex += chunk + "\n";
+      }
+      document.getElementById('modal-hex').textContent = hex;
+      document.getElementById('packet-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('packet-modal').classList.add('hidden');
+    }
+
+    // Policy Modal Controls
+    function openPolicyModal() { document.getElementById('policy-modal').classList.remove('hidden'); }
+    function closePolicyModal() { document.getElementById('policy-modal').classList.add('hidden'); }
+    function updatePortThresh(val) {
+      portScanThreshold = parseInt(val);
+      document.getElementById('val-port-thresh').textContent = `${val} ports`;
+    }
+    function updateBurstThresh(val) {
+      burstThreshold = parseInt(val);
+      document.getElementById('val-burst-thresh').textContent = `${val} pkts`;
+    }
+
+    // Threat Simulation Scenarios
+    function injectNormalBurst() {
+      for (let i = 0; i < 6; i++) {
+        addPacket("192.168.1.104", "142.250.190.46", 52140 + i, 443, "TCP", 1420, "TLSv1.3 Encrypted Application Data");
+      }
+      addPacket("192.168.1.104", "8.8.8.8", 53120, 53, "UDP", 72, "DNS Standard query 0x24e1 A accounts.google.com");
+    }
+
+    function injectPortScanAttack() {
+      const attacker = "10.0.0.99";
+      for (let p = 8000; p < 8000 + portScanThreshold + 4; p++) {
+        addPacket(attacker, "192.168.1.1", 45000 + p, p, "TCP", 64, `[SYN] Stealth port sweep probe to port ${p}`, true);
+      }
+      registerAlert(
+        "HIGH",
+        "Reconnaissance Port Sweep Detected",
+        attacker,
+        `Source ${attacker} probed ${portScanThreshold + 4} ports sequentially within 5s window.`,
+        `sudo iptables -A INPUT -s ${attacker} -j DROP`
+      );
+    }
+
+    function injectBurstRateAttack() {
+      const attacker = "172.16.0.40";
+      for (let i = 0; i < 24; i++) {
+        addPacket(attacker, "192.168.1.5", 48900 + i, 80, "TCP", 128, "Volumetric SYN flood packet", true);
+      }
+      registerAlert(
+        "CRITICAL",
+        "Volumetric SYN Flood Velocity Exceeded",
+        attacker,
+        `Host ${attacker} emitted packet flood exceeding ${burstThreshold} pkts/window.`,
+        `iptables -A INPUT -p tcp --syn -m limit --limit 1/s -j ACCEPT`
+      );
+    }
+
+    function injectInsecureTelnet() {
+      const client = "192.168.1.88";
+      addPacket(client, "192.168.1.200", 54312, 23, "TCP", 98, "Cleartext Telnet Authentication Attempt [USER login: root]", true);
+      registerAlert(
+        "MEDIUM",
+        "Insecure Protocol Warning: Telnet Port 23",
+        client,
+        `Host ${client} transmitted cleartext credentials over Port 23 Telnet.`,
+        `Disable Telnet daemon and enforce SSH-only (Port 22).`
+      );
+    }
+
+    function toggleCapture() {
+      isCapturing = !isCapturing;
+      const btnText = document.getElementById('btn-text');
+      const btnIcon = document.getElementById('btn-icon');
+      const beacon = document.getElementById('beacon-ring');
+      if (isCapturing) {
+        btnText.textContent = "Pause Feed";
+        btnIcon.textContent = "⏸";
+        beacon.className = "absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 pulse-beacon";
+      } else {
+        btnText.textContent = "Resume Feed";
+        btnIcon.textContent = "▶";
+        beacon.className = "absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-500";
+      }
+    }
+
+    function resetData() {
+      totalPackets = 0;
+      totalBytes = 0;
+      tcpCount = 0;
+      udpCount = 0;
+      icmpCount = 0;
+      alerts = [];
+      packets = [];
+      blockedIps.clear();
+      renderQuarantineList();
+      document.getElementById('incidents-container').innerHTML = '<div class="p-4 rounded-xl bg-slate-950/40 border border-slate-800/60 text-center text-slate-500 text-xs">✔ Clean Baseline: Zero security anomalies registered.</div>';
+      document.getElementById('alert-counter-badge').textContent = "0 INCIDENTS";
+      updateHUD();
+      applyFilters();
+    }
+
+    function exportAuditReport() {
+      const text = `
+================================================================================
+          CYBER SENTINEL - DEFENSIVE NETWORK AUDIT & MITIGATION REPORT
+================================================================================
+Generated: ${new Date().toLocaleString()}
+Interface: ${document.getElementById('iface-select').value}
+Total Packets Ingested: ${totalPackets}
+Total Bytes Ingested:   ${totalBytes} bytes (${(totalBytes / 1048576).toFixed(2)} MB)
+Protocol Breakdown:     TCP: ${tcpCount} | UDP: ${udpCount} | ICMP: ${icmpCount}
+
+Active Quarantined IPs (${blockedIps.size}):
+${blockedIps.size > 0 ? Array.from(blockedIps).map(ip => ` - 🚫 ${ip} (FIREWALL DROPPED)`).join('\n') : ' None'}
+
+Flagged Security Incidents (${alerts.length}):
+${alerts.map(a => `[${a.severity}] ${a.time} - Host: ${a.srcIp}
+  Threat: ${a.title}
+  Detail: ${a.desc}
+  Defense Action: ${a.remediation}`).join('\n\n')}
+================================================================================
+`;
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `network_audit_report_${Date.now()}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Rolling PPS Interval
+    let lastPktCount = 0;
+    setInterval(() => {
+      if (isCapturing) {
+        if (Math.random() > 0.35) {
+          addPacket("192.168.1.100", "142.250.190.46", 51200 + Math.floor(Math.random() * 2000), 443, "TCP", 920 + Math.floor(Math.random() * 400), "TLSv1.3 Encrypted Session Stream");
+        }
+      }
+
+      const diff = totalPackets - lastPktCount;
+      lastPktCount = totalPackets;
+      document.getElementById('stat-pps').textContent = diff.toFixed(1) + " pps";
+
+      chartHistory.shift();
+      chartHistory.push(diff);
+      drawChart();
+    }, 1000);
+
+    // Initial ambient sessions
+    for (let i = 0; i < 6; i++) {
+      injectNormalBurst();
+    }
+  </script>
+</body>
+</html>

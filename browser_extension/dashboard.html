@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CyberSentinel - Browser Network Defense Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="top-header">
+    <div class="brand-wrapper">
+      <div class="brand-icon">
+        <span>🛡️</span>
+        <span class="beacon"></span>
+      </div>
+      <div>
+        <div class="brand-title">
+          <span>CYBER SENTINEL</span>
+          <span class="brand-badge">BROWSER SOC EXTENSION</span>
+        </div>
+        <div class="brand-subtitle">Live HTTP/HTTPS/WebSocket Stream Dissector & Domain Quarantine</div>
+      </div>
+    </div>
+
+    <div>
+      <button id="btn-export-audit" class="btn btn-outline">
+        <span>📥</span> Export Audit Report
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- KPI HUD Cards -->
+    <section class="grid-4">
+      <div class="hud-card">
+        <div class="hud-title">Total Browser Requests</div>
+        <div id="stat-total-reqs" class="hud-value" style="color: #f8fafc;">0</div>
+        <div class="hud-desc active">● Live webRequest interceptor</div>
+      </div>
+
+      <div class="hud-card">
+        <div class="hud-title">Protocol Ingest Types</div>
+        <div id="stat-proto-types" class="hud-value" style="color: #06b6d4;">HTTPS / WSS</div>
+        <div class="hud-desc">TLS encrypted transport</div>
+      </div>
+
+      <div class="hud-card">
+        <div class="hud-title">Quarantined Domains</div>
+        <div id="stat-quarantined" class="hud-value" style="color: #f43f5e;">0</div>
+        <div class="hud-desc">Active browser blocklist</div>
+      </div>
+
+      <div class="hud-card">
+        <div class="hud-title">Flagged Security Anomalies</div>
+        <div id="stat-alerts" class="hud-value" style="color: #f59e0b;">0</div>
+        <div class="hud-desc">Surveillance & beacon triggers</div>
+      </div>
+    </section>
+
+    <!-- Quarantined Domains Bar -->
+    <section class="section-card">
+      <div class="section-header">
+        <div class="section-title" style="color: #f43f5e;">
+          <span>⛔</span> Active Browser Quarantine List (Domain Blacklist)
+        </div>
+        <span style="font-size: 11px; color: #94a3b8;">Blocked domains cannot transmit telemetry or cookies</span>
+      </div>
+      <div id="quarantine-tags" class="quarantine-container">
+        <span style="color: #64748b; font-style: italic;">No domains quarantined yet. Click "Quarantine" on any alert below to drop connection.</span>
+      </div>
+    </section>
+
+    <!-- Incidents & Alerts -->
+    <section class="section-card">
+      <div class="section-header">
+        <div class="section-title" style="color: #f43f5e;">
+          <span>🚨</span> Live Security Anomaly Feed
+        </div>
+        <span id="alerts-count-badge" class="badge badge-rose">0 ALERTS</span>
+      </div>
+
+      <div id="incidents-list" class="incidents-container">
+        <div style="padding: 12px; background: rgba(9, 13, 24, 0.4); border: 1px solid #1e293b; border-radius: 8px; text-align: center; color: #64748b;">
+          ✔ Clean: Zero security anomalies registered in active session.
+        </div>
+      </div>
+    </section>
+
+    <!-- Deep Request Stream Inspector Table -->
+    <section class="section-card">
+      <div class="section-header">
+        <div class="section-title">
+          <span>📦</span> Live Intercepted Browser Stream
+        </div>
+        <div class="search-wrapper">
+          <span class="search-icon">🔍</span>
+          <input id="search-input" type="text" placeholder="Filter hostname or URL..." class="search-input">
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Protocol</th>
+              <th>Method</th>
+              <th>Domain / Hostname</th>
+              <th>Resource Type</th>
+              <th>Full Target URL</th>
+            </tr>
+          </thead>
+          <tbody id="stream-tbody">
+            <!-- Dynamic stream rows -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
